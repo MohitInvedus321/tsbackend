@@ -9,6 +9,7 @@ const envSchema = z.object({
   // NODE_ENV: z.enum(["development", "production", "test"]),
 
   MONGODB_URL: z.string().min(1),
+  JWT_SECRET_TOKEN: z.string(),
 });
 
 const parsed = envSchema.safeParse(process.env);

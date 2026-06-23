@@ -1,30 +1,53 @@
-import { Response, NextFunction } from "express";
+import { NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { StatusCodes } from "http-status-codes";
+import { message } from "../messages/index.js";
+import { env } from "../config/env.config.js";
 
-export const authenticate = (req: any, res: Response, next: NextFunction) => {
+const verifyAuthToken = (req: any, res: any, next: NextFunction) => {
+  const token = req?.headers?.authorization;
+  if (!token) {
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      error: message.noToken,
+      message: message.noToken,
+      code: StatusCodes.UNAUTHORIZED,
+    });
+  }
   try {
-    const token = req.headers.authorization;
-
-    if (!token) {
-      return res.status(401).json({
-        message: "Unauthorized",
+    const verified: any = jwt.verify(token, env.JWT_SECRET_TOKEN);
+    if (verified.role) {
+      req.user = verified;
+      next();
+    }
+  } catch (error: any) {
+    if (error.message == "jwt expired") {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        error: message.sessionExpired,
+        message: message.sessionExpired,
+        code: StatusCodes.UNAUTHORIZED,
       });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-
-    req.user = decoded;
-
-    next();
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({
-        message: "Token expired",
-      });
-    }
-
-    return res.status(401).json({
-      message: "Invalid token",
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      error: message.invalidToken,
+      message: message.invalidToken,
+      code: StatusCodes.UNAUTHORIZED,
     });
   }
 };
+
+const CheckRole = (roles: string[]) => {
+  return (req: any, res: any, next: any) => {
+    const isVerified = roles.includes(req.user.role);
+    if (isVerified) {
+      next();
+    } else {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        error: message.unAuthRole,
+        message: message.unAuthRole,
+        code: StatusCodes.FORBIDDEN, //403
+      });
+    }
+  };
+};
+
+export { verifyAuthToken, CheckRole };
