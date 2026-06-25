@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import app from "./app.js";
 import { connectDB } from "./config/database.js";
+import { appLogger } from "./config/logger.js";
 import { env } from "./config/env.config.js";
 
 const startServer = async () => {
@@ -9,6 +10,7 @@ const startServer = async () => {
     await connectDB();
 
     app.listen(env.PORT || 8000, () => {
+      appLogger.info(`Server is running at PORT ${env.PORT}`);
       console.log(`Server is running at PORT ${env.PORT}`);
     });
   } catch (error) {
